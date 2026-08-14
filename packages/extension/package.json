@@ -1,0 +1,23 @@
+{
+  "name": "@context-health/extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome MV3 extension: a persistent side panel that live-diagnoses context rot on claude.ai and chatgpt.com.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@context-health/core": "*",
+    "@context-health/web-demo": "*"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.7.1",
+    "@types/chrome": "^0.0.287",
+    "typescript": "^5.7.2",
+    "vite": "^8.2.1"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Context Health Check",
+  "description": "Live context-rot diagnosis for claude.ai and chatgpt.com — a persistent side panel that scores your conversation as you chat.",
+  "version": "0.1.0",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Open Context Health Check"
+  },
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/*", "https://chatgpt.com/*", "https://chat.openai.com/*"],
+      "js": ["src/content-script.ts"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["sidePanel", "storage"],
+  "host_permissions": [
+    "https://claude.ai/*",
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*"
+  ]
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>Context Health Check</title>
+<style>
+  @import "@context-health/core/theme.css";
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    font-size: 13px;
+  }
+
+  .panel { padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 8px; }
+  .brand .mark {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: linear-gradient(135deg, var(--series-blue), var(--status-good));
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 10px;
+  }
+  .brand .name { font-weight: 600; font-size: 13px; }
+  .icon-btn {
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
+    border-radius: 999px; width: 26px; height: 26px; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-actions { display: flex; gap: 6px; }
+
+  .status-line { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--status-good); flex: none; }
+  .status-line.fallback .status-dot { background: var(--status-warning); }
+
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px;
+  }
+
+  .settings-panel { display: none; flex-direction: column; gap: 10px; }
+  .settings-panel.show { display: flex; }
+  .field label {
+    display: block; font-size: 10.5px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  select, input[type="number"], input[type="password"] {
+    width: 100%; font-family: var(--sans); font-size: 12.5px; color: var(--text-primary);
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px;
+  }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .toggle-row .toggle-label { font-size: 12px; }
+  .toggle-row .toggle-hint { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+  input[type="checkbox"] { accent-color: var(--series-blue); width: 16px; height: 16px; }
+
+  .score-hero { display: flex; align-items: baseline; gap: 5px; }
+  .score-hero .num { font-size: 36px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+  .score-hero .max { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+  .score-label {
+    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; display: inline-flex;
+    align-items: center; gap: 5px; margin-top: 6px;
+  }
+  .score-label .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .meter-track {
+    width: 100%; height: 8px; border-radius: 999px; background: var(--series-blue-100); overflow: hidden; margin-top: 8px;
+  }
+  .meter-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+  .score-desc { font-size: 11.5px; color: var(--text-secondary); line-height: 1.45; margin: 8px 0 0; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .kpi-tile {
+    background: var(--page); border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .kpi-tile .label { font-size: 9.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
+  .kpi-tile .value { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+
+  svg.chart { width: 100%; height: 120px; display: block; overflow: visible; }
+
+  .rec-item { display: flex; gap: 9px; padding: 9px 0; border-top: 1px solid var(--gridline); }
+  .rec-item:first-of-type { border-top: none; }
+  .rec-icon {
+    width: 20px; height: 20px; border-radius: 6px; flex: none; display: flex; align-items: center;
+    justify-content: center; font-size: 10.5px; font-weight: 700; color: white;
+  }
+  .rec-body .rec-title { font-weight: 700; font-size: 11.5px; margin-bottom: 2px; }
+  .rec-body .rec-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+
+  .paste-box textarea {
+    width: 100%; min-height: 140px; resize: vertical; line-height: 1.5; font-size: 12px;
+    font-family: var(--sans); color: var(--text-primary); background: var(--page);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  }
+  .paste-box .hint { font-size: 10.5px; color: var(--text-muted); margin: 8px 0; line-height: 1.4; }
+  button {
+    font-family: var(--sans); cursor: pointer; border-radius: 8px; font-weight: 600; font-size: 12px;
+    border: 1px solid transparent; padding: 8px 12px;
+  }
+  .btn-primary { background: var(--series-blue); color: white; border-color: var(--series-blue); width: 100%; }
+  .btn-primary:hover { filter: brightness(1.06); }
+</style>
+</head>
+<body>
+<div class="panel">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">CH</div>
+      <div class="name">Context Health Check</div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="themeToggle" type="button" title="Toggle theme">🌙</button>
+      <button class="icon-btn" id="settingsToggle" type="button" title="Settings">⚙</button>
+    </div>
+  </header>
+
+  <div class="status-line" id="statusLine">
+    <span class="status-dot"></span>
+    <span id="statusText">Watching this conversation…</span>
+  </div>
+
+  <div class="card settings-panel" id="settingsPanel">
+    <div class="field">
+      <label for="modelSelect">Context window</label>
+      <select id="modelSelect">
+        <option value="200000">Claude — 200K tokens</option>
+        <option value="1000000">Claude — 1M tokens (long-context)</option>
+        <option value="128000">GPT-4o / ChatGPT — 128K tokens</option>
+        <option value="400000">GPT-5-class — 400K tokens</option>
+        <option value="custom">Custom…</option>
+      </select>
+    </div>
+    <div class="field" id="customWindowField" style="display:none;">
+      <label for="customWindowInput">Custom window (tokens)</label>
+      <input id="customWindowInput" type="number" min="1000" step="1000" value="200000">
+    </div>
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Use my Anthropic API key for exact token counts</div>
+        <div class="toggle-hint">Off by default. Stored only in chrome.storage.local, sent only to Anthropic's count_tokens endpoint.</div>
+      </div>
+      <input type="checkbox" id="apiKeyToggle">
+    </div>
+    <div class="field" id="apiKeyField" style="display:none;">
+      <label for="apiKeyInput">Anthropic API key</label>
+      <input id="apiKeyInput" type="password" placeholder="sk-ant-...">
+    </div>
+  </div>
+
+  <div id="liveView">
+    <div class="card score-card">
+      <div class="score-hero"><span class="num" id="scoreNum">—</span><span class="max">/100</span></div>
+      <div class="score-label" id="scoreLabel"><span class="dot"></span><span id="scoreLabelText">—</span></div>
+      <div class="meter-track"><div class="meter-fill" id="meterFill" style="width:0%"></div></div>
+      <p class="score-desc" id="scoreDesc">Open a conversation on claude.ai or chatgpt.com to see its context health.</p>
+    </div>
+
+    <div class="card">
+      <div class="kpi-row">
+        <div class="kpi-tile"><div class="label">Window used</div><div class="value" id="kpiUsage">—</div></div>
+        <div class="kpi-tile"><div class="label">Bloat</div><div class="value" id="kpiBloat">—</div></div>
+        <div class="kpi-tile"><div class="label">Redundant</div><div class="value" id="kpiRedundant">—</div></div>
+        <div class="kpi-tile"><div class="label">Turns</div><div class="value" id="kpiTurns">—</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <svg class="chart" id="chartSvg" viewBox="0 0 320 120" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="card" id="recCard">
+      <div id="recList"></div>
+    </div>
+  </div>
+
+  <div class="card paste-box" id="pasteBox" style="display:none;">
+    <p class="hint">We couldn't detect the conversation on this page automatically — paste it below instead. Label turns with <code>Human:</code>/<code>Assistant:</code>.</p>
+    <textarea id="transcript" placeholder="Human: ...&#10;&#10;Assistant: ..."></textarea>
+    <button class="btn-primary" id="analyzePasteBtn" type="button" style="margin-top:8px;">Analyze →</button>
+  </div>
+</div>
+<script type="module" src="./main.ts"></script>
+</body>
+</html>

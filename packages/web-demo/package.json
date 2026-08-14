@@ -4,6 +4,9 @@
   "private": true,
   "description": "Zero-install HTML demo for Context Health Check — paste a transcript, get a score, no build step for the end user.",
   "type": "module",
+  "exports": {
+    "./parseTranscript": "./src/parseTranscript.ts"
+  },
   "scripts": {
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
