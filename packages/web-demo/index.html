@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Health Check — is your AI conversation about to hit context rot?</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page:           #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-blue:    #2a78d6;
+    --series-blue-100:#cde2fb;
+    --series-blue-450:#2a78d6;
+    --status-good:      #0ca30c;
+    --status-warning:   #fab219;
+    --status-serious:   #ec835a;
+    --status-critical:  #d03b3b;
+    --good-wash:      rgba(12,163,12,0.08);
+    --warning-wash:   rgba(250,178,25,0.14);
+    --serious-wash:   rgba(236,131,90,0.12);
+    --critical-wash:  rgba(208,59,59,0.10);
+    --success-text:   #006300;
+    --card-radius:    14px;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page:           #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-blue:    #3987e5;
+      --series-blue-100:#184f95;
+      --series-blue-450:#3987e5;
+      --status-good:      #0ca30c;
+      --status-warning:   #fab219;
+      --status-serious:   #ec835a;
+      --status-critical:  #d03b3b;
+      --good-wash:      rgba(12,163,12,0.14);
+      --warning-wash:   rgba(250,178,25,0.16);
+      --serious-wash:   rgba(236,131,90,0.16);
+      --critical-wash:  rgba(208,59,59,0.16);
+      --success-text:   #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page:           #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-blue:    #3987e5;
+    --series-blue-100:#184f95;
+    --series-blue-450:#3987e5;
+    --status-good:      #0ca30c;
+    --status-warning:   #fab219;
+    --status-serious:   #ec835a;
+    --status-critical:  #d03b3b;
+    --good-wash:      rgba(12,163,12,0.14);
+    --warning-wash:   rgba(250,178,25,0.16);
+    --serious-wash:   rgba(236,131,90,0.16);
+    --critical-wash:  rgba(208,59,59,0.16);
+    --success-text:   #0ca30c;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--series-blue); }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px 80px; }
+
+  header.top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 0 6px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .mark {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--series-blue), var(--status-good));
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 14px;
+  }
+  .brand .name { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+  .theme-toggle {
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
+    border-radius: 999px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: var(--sans);
+  }
+  .theme-toggle:hover { color: var(--text-primary); }
+
+  .hero { padding: 28px 0 8px; }
+  .hero h1 {
+    font-size: clamp(26px, 4vw, 38px); line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.01em;
+    max-width: 780px;
+  }
+  .hero p.sub {
+    color: var(--text-secondary); font-size: 15.5px; max-width: 620px; margin: 0 0 4px; line-height: 1.55;
+  }
+  .hero p.credit { color: var(--text-muted); font-size: 12.5px; margin: 10px 0 0; }
+  .hero p.credit a { color: var(--text-muted); text-decoration: underline; }
+
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--card-radius);
+    padding: 22px 24px;
+  }
+
+  .input-card { margin-top: 22px; }
+  .input-row {
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 14px;
+  }
+  .field label {
+    display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  select, textarea {
+    font-family: var(--sans); font-size: 14px; color: var(--text-primary);
+    background: var(--page); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px;
+  }
+  select { min-width: 220px; }
+  textarea {
+    width: 100%; min-height: 220px; resize: vertical; line-height: 1.5; font-size: 13.5px;
+  }
+  textarea:focus, select:focus { outline: 2px solid var(--series-blue); outline-offset: 1px; }
+
+  .helper-row {
+    display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 12px; flex-wrap: wrap;
+  }
+  .hint { font-size: 12.5px; color: var(--text-muted); max-width: 520px; line-height: 1.5; }
+  .hint code { background: var(--page); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; }
+
+  .btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  button {
+    font-family: var(--sans); cursor: pointer; border-radius: 10px; font-weight: 600; font-size: 13.5px;
+    border: 1px solid transparent; padding: 10px 16px;
+  }
+  .btn-primary { background: var(--series-blue); color: white; border-color: var(--series-blue); }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-secondary { background: transparent; color: var(--text-secondary); border-color: var(--border); }
+  .btn-secondary:hover { color: var(--text-primary); border-color: var(--text-muted); }
+  .btn-ghost { background: transparent; color: var(--series-blue); border: none; padding: 10px 4px; }
+
+  /* Results */
+  #results { margin-top: 30px; display: none; }
+  #results.show { display: block; }
+
+  .score-grid {
+    display: grid; grid-template-columns: 260px 1fr; gap: 18px; margin-bottom: 18px;
+  }
+  @media (max-width: 760px) { .score-grid { grid-template-columns: 1fr; } }
+
+  .score-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .score-hero { display: flex; align-items: baseline; gap: 6px; }
+  .score-hero .num { font-size: 56px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+  .score-hero .max { font-size: 18px; color: var(--text-muted); font-weight: 600; }
+  .score-label {
+    font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; display: inline-flex;
+    align-items: center; gap: 6px;
+  }
+  .score-label .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .meter-track {
+    width: 100%; height: 10px; border-radius: 999px; background: var(--series-blue-100); overflow: hidden; margin-top: 4px;
+  }
+  .meter-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+  .score-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 2px 0 0; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 760px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-tile {
+    background: var(--page); border: 1px solid var(--border); border-radius: 10px; padding: 14px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .kpi-tile .label { font-size: 11.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
+  .kpi-tile .value { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .kpi-tile .note { font-size: 11.5px; color: var(--text-secondary); }
+
+  .chart-card { margin-top: 18px; }
+  .chart-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 8px; }
+  .chart-head h3 { margin: 0 0 2px; font-size: 15px; }
+  .chart-head p { margin: 0; font-size: 12.5px; color: var(--text-muted); }
+  .legend-zones { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--text-secondary); }
+  .legend-zones span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend-zones i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  .chart-svg-wrap { position: relative; margin-top: 10px; }
+  svg.chart { width: 100%; height: 260px; display: block; overflow: visible; }
+  .tooltip {
+    position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translate(-50%, -110%); white-space: nowrap; opacity: 0; transition: opacity 0.1s ease; z-index: 5;
+  }
+  .tooltip .t-val { font-weight: 700; font-size: 13px; }
+  .tooltip .t-sub { color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+
+  .rec-card { margin-top: 18px; }
+  .rec-card h3 { margin: 0 0 4px; font-size: 15px; }
+  .rec-card > p.sub { margin: 0 0 14px; font-size: 12.5px; color: var(--text-muted); }
+  .rec-item {
+    display: flex; gap: 12px; padding: 13px 0; border-top: 1px solid var(--gridline);
+  }
+  .rec-item:first-of-type { border-top: none; }
+  .rec-icon {
+    width: 26px; height: 26px; border-radius: 7px; flex: none; display: flex; align-items: center;
+    justify-content: center; font-size: 13px; font-weight: 700; color: white;
+  }
+  .rec-body .rec-title { font-weight: 700; font-size: 13.5px; margin-bottom: 3px; }
+  .rec-body .rec-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .rec-body .rec-desc code { background: var(--page); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+  .share-card { margin-top: 18px; }
+  .share-inner {
+    border-radius: 12px; padding: 24px; background: linear-gradient(155deg, var(--surface-1) 0%, var(--page) 100%);
+    border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;
+  }
+  .share-left { display: flex; align-items: center; gap: 16px; }
+  .share-score { font-size: 40px; font-weight: 700; }
+  .share-meta .t1 { font-weight: 700; font-size: 14px; }
+  .share-meta .t2 { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+  .share-actions { display: flex; gap: 8px; }
+
+  footer.page-footer {
+    margin-top: 46px; padding-top: 18px; border-top: 1px solid var(--gridline);
+    font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  footer.page-footer a { color: var(--text-muted); }
+
+  .empty-note { font-size: 12.5px; color: var(--status-critical); margin-top: 8px; display: none; }
+  .empty-note.show { display: block; }
+
+  ::selection { background: var(--series-blue-100); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="mark">CH</div>
+      <div class="name">Context Health Check</div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button">🌙 Dark mode</button>
+  </header>
+
+  <section class="hero">
+    <h1>Is your AI conversation about to hit context rot?</h1>
+    <p class="sub">Paste a Claude or ChatGPT conversation and get a health score in 10 seconds — where context is being wasted, when recall risk starts climbing, and exactly which fix to reach for.</p>
+    <p class="credit">Built on the context-management primitives from <a href="https://platform.claude.com/cookbook/tool-use-context-engineering-context-engineering-tools" target="_blank" rel="noopener">Anthropic's own context engineering guide</a> — tool-result clearing, compaction, and memory.</p>
+  </header>
+
+  <section class="card input-card">
+    <div class="input-row">
+      <div class="field">
+        <label for="modelSelect">Context window</label>
+        <select id="modelSelect">
+          <option value="200000">Claude — 200K tokens</option>
+          <option value="1000000">Claude — 1M tokens (long-context)</option>
+          <option value="128000">GPT-4o / ChatGPT — 128K tokens</option>
+          <option value="400000">GPT-5-class — 400K tokens</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </div>
+      <div class="field" id="customWindowField" style="display:none;">
+        <label for="customWindowInput">Custom window (tokens)</label>
+        <input id="customWindowInput" type="number" min="1000" step="1000" value="200000"
+          style="font-family: var(--sans); font-size:14px; color: var(--text-primary); background: var(--page); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; width: 160px;">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="transcript">Paste your conversation</label>
+      <textarea id="transcript" placeholder="Paste a conversation. Label turns like:&#10;&#10;Human: can you help me refactor this file?&#10;Assistant: sure, paste the file...&#10;Human: [pastes a 4,000 line file]&#10;Assistant: here's the refactor...&#10;&#10;No labels? We'll still estimate total size, but you'll get a much better read on rot risk with Human:/Assistant: turns."></textarea>
+    </div>
+
+    <div class="helper-row">
+      <div class="hint">We estimate tokens client-side (~4 characters/token) — nothing you paste leaves your browser. Use <code>Human:</code>/<code>Assistant:</code> (or <code>User:</code>/<code>Claude:</code>) at the start of a line to mark turns.</div>
+      <div class="btn-row">
+        <button class="btn-ghost" id="loadDemo" type="button">Load a demo transcript</button>
+        <button class="btn-secondary" id="clearBtn" type="button">Clear</button>
+        <button class="btn-primary" id="analyzeBtn" type="button">Analyze →</button>
+      </div>
+    </div>
+    <div class="empty-note" id="emptyNote">Paste a conversation first — or click "Load a demo transcript" to see how it works.</div>
+  </section>
+
+  <section id="results">
+    <div class="score-grid">
+      <div class="card score-card">
+        <div class="score-hero"><span class="num" id="scoreNum">—</span><span class="max">/100</span></div>
+        <div class="score-label" id="scoreLabel"><span class="dot"></span><span id="scoreLabelText">—</span></div>
+        <div class="meter-track"><div class="meter-fill" id="meterFill" style="width:0%"></div></div>
+        <p class="score-desc" id="scoreDesc">Paste a conversation and hit Analyze to see your context health score.</p>
+      </div>
+      <div class="card">
+        <div class="kpi-row">
+          <div class="kpi-tile"><div class="label">Peak window used</div><div class="value" id="kpiUsage">—</div><div class="note" id="kpiUsageNote">of context window</div></div>
+          <div class="kpi-tile"><div class="label">Re-fetchable bloat</div><div class="value" id="kpiBloat">—</div><div class="note" id="kpiBloatNote">of tokens in oversized turns</div></div>
+          <div class="kpi-tile"><div class="label">Redundant re-pastes</div><div class="value" id="kpiRedundant">—</div><div class="note">near-duplicate large blocks</div></div>
+          <div class="kpi-tile"><div class="label">Turns analyzed</div><div class="value" id="kpiTurns">—</div><div class="note" id="kpiTurnsNote">detected in transcript</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card chart-card">
+      <div class="chart-head">
+        <div>
+          <h3>Cumulative context usage, turn by turn</h3>
+          <p>Hover a point to see what that turn cost you.</p>
+        </div>
+        <div class="legend-zones">
+          <span><i style="background:var(--status-good)"></i>Healthy &lt;50%</span>
+          <span><i style="background:var(--status-warning)"></i>Watch 50–75%</span>
+          <span><i style="background:var(--status-serious)"></i>Rot risk 75–90%</span>
+          <span><i style="background:var(--status-critical)"></i>Critical 90%+</span>
+        </div>
+      </div>
+      <div class="chart-svg-wrap">
+        <svg class="chart" id="chartSvg" viewBox="0 0 900 260" preserveAspectRatio="none"></svg>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+    </div>
+
+    <div class="card rec-card">
+      <h3>What to do about it</h3>
+      <p class="sub">Recommendations map directly to the three context-management primitives Anthropic ships: clearing, compaction, and memory.</p>
+      <div id="recList"></div>
+    </div>
+
+    <div class="card share-card">
+      <div class="share-inner" id="shareInner">
+        <div class="share-left">
+          <div class="share-score" id="shareScore">—</div>
+          <div class="share-meta">
+            <div class="t1" id="shareTitle">Context Health Check</div>
+            <div class="t2" id="shareSub">Score your own conversation →</div>
+          </div>
+        </div>
+        <div class="share-actions">
+          <button class="btn-secondary" id="copySummary" type="button">Copy summary</button>
+          <button class="btn-primary" id="downloadCard" type="button">Download score card</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <span>Context Health Check — a diagnostic, not an official Anthropic or OpenAI product. Token counts are estimates (~4 chars/token).</span>
+    <span>Runs entirely in your browser. Nothing you paste is uploaded.</span>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- BUILD:INJECT_BUNDLE -->
+</body>
+</html>

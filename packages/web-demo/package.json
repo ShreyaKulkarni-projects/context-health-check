@@ -1,0 +1,19 @@
+{
+  "name": "@context-health/web-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zero-install HTML demo for Context Health Check — paste a transcript, get a score, no build step for the end user.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@context-health/core": "*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2",
+    "typescript": "^5.7.2"
+  },
+  "license": "MIT"
+}
