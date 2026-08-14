@@ -1,0 +1,19 @@
+{
+  "name": "context-health-check",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Diagnoses context rot in AI chat sessions in real time.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspace=@context-health/core",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
