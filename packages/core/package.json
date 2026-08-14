@@ -12,6 +12,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./gpt-tokenizer": {
+      "types": "./dist/gptTokenizer.d.ts",
+      "import": "./dist/gptTokenizer.js",
+      "require": "./dist/gptTokenizer.cjs"
+    },
     "./theme.css": "./src/constants/theme.css"
   },
   "files": [

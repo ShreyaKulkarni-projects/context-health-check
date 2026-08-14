@@ -7,8 +7,12 @@ export { clamp, riskZoneFor, computeScore } from "./score.js";
 export { buildRecommendations } from "./recommendations.js";
 export type { RecommendationInput } from "./recommendations.js";
 export { CharHeuristicEstimator, charHeuristicEstimator } from "./tokenizers/charHeuristic.js";
-export { GptTokenizerEstimator } from "./tokenizers/gptTokenizer.js";
-export type { GptEncoding } from "./tokenizers/gptTokenizer.js";
+// GptTokenizerEstimator is intentionally NOT re-exported here: it pulls in
+// gpt-tokenizer's full BPE vocab tables (multi-MB), which would make every
+// consumer of the main entry point (web-demo's single-file bundle, the
+// extension) pay that cost even if they only ever use the zero-dependency
+// char-heuristic default. Import it explicitly from
+// "@context-health/core/gpt-tokenizer" when you actually want it.
 export { AnthropicApiEstimator } from "./tokenizers/anthropicApi.js";
 export type { AnthropicApiEstimatorOptions } from "./tokenizers/anthropicApi.js";
 export { THEME } from "./constants/theme.js";
