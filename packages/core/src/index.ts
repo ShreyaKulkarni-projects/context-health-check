@@ -17,3 +17,5 @@ export { AnthropicApiEstimator } from "./tokenizers/anthropicApi.js";
 export type { AnthropicApiEstimatorOptions } from "./tokenizers/anthropicApi.js";
 export { THEME } from "./constants/theme.js";
 export type { ThemeMode } from "./constants/theme.js";
+export { KPI_GLOSSARY } from "./constants/glossary.js";
+export type { KpiGlossaryEntry } from "./constants/glossary.js";

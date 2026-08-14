@@ -1,5 +1,22 @@
-import { analyze, type AnalysisResult, type Recommendation } from "@context-health/core";
+import { analyze, KPI_GLOSSARY, type AnalysisResult, type Recommendation } from "@context-health/core";
 import { parseTranscript, type ParsedTurn } from "./parseTranscript.js";
+
+// ---------- KPI glossary (hover explanation; the note line below each value
+// stays the live computed number, set in runAnalysis()) ----------
+const KPI_INFO_IDS: Record<(typeof KPI_GLOSSARY)[number]["key"], { info: string; tile: string }> = {
+  peakUsage: { info: "kpiUsageInfo", tile: "kpiUsageTile" },
+  bloat: { info: "kpiBloatInfo", tile: "kpiBloatTile" },
+  redundant: { info: "kpiRedundantInfo", tile: "kpiRedundantTile" },
+  turns: { info: "kpiTurnsInfo", tile: "kpiTurnsTile" },
+};
+KPI_GLOSSARY.forEach((entry) => {
+  const ids = KPI_INFO_IDS[entry.key];
+  const title = `${entry.oneLiner}. ${entry.detail}`;
+  const info = document.getElementById(ids.info);
+  const tile = document.getElementById(ids.tile);
+  if (info) info.title = title;
+  if (tile) tile.title = title;
+});
 
 // ---------- Theme ----------
 const root = document.documentElement;

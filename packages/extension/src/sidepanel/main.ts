@@ -1,8 +1,25 @@
-import { ConversationAnalyzer, type AnalysisResult, type Recommendation } from "@context-health/core";
+import { ConversationAnalyzer, KPI_GLOSSARY, type AnalysisResult, type Recommendation } from "@context-health/core";
 import { parseTranscript } from "@context-health/web-demo/parseTranscript";
 import type { ContentMessage } from "../content-script.js";
 import type { ConversationTurn } from "../adapters/types.js";
 import { loadSettings, saveSettings, type PanelSettings } from "./settings.js";
+
+// ---------- KPI glossary (hover explanation; the note line below each value
+// stays a compact live number, set in render()) ----------
+const KPI_INFO_IDS: Record<(typeof KPI_GLOSSARY)[number]["key"], { info: string; tile: string }> = {
+  peakUsage: { info: "kpiUsageInfo", tile: "kpiUsageTile" },
+  bloat: { info: "kpiBloatInfo", tile: "kpiBloatTile" },
+  redundant: { info: "kpiRedundantInfo", tile: "kpiRedundantTile" },
+  turns: { info: "kpiTurnsInfo", tile: "kpiTurnsTile" },
+};
+KPI_GLOSSARY.forEach((entry) => {
+  const ids = KPI_INFO_IDS[entry.key];
+  const title = `${entry.oneLiner}. ${entry.detail}`;
+  const info = document.getElementById(ids.info);
+  const tile = document.getElementById(ids.tile);
+  if (info) info.title = title;
+  if (tile) tile.title = title;
+});
 
 // ---------- Theme ----------
 const root = document.documentElement;
@@ -117,6 +134,12 @@ function fmtPct(v: number): string {
   return Math.min(999, Math.round(v)) + "%";
 }
 
+function fmtTokens(v: number): string {
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(v % 1_000_000 === 0 ? 0 : 1) + "M";
+  if (v >= 1000) return Math.round(v / 1000) + "K";
+  return Math.round(v).toString();
+}
+
 function renderRecommendations(recommendations: Recommendation[]) {
   const list = document.getElementById("recList")!;
   list.innerHTML = "";
@@ -206,9 +229,13 @@ function render(result: AnalysisResult) {
       : `${fmtPct(result.peakUsagePct)} of the context window used, ${Math.round(result.bloatRatio * 100)}% bloat.`;
 
   document.getElementById("kpiUsage")!.textContent = fmtPct(result.peakUsagePct);
+  document.getElementById("kpiUsageNote")!.textContent = `${fmtTokens(result.totalTokens)}/${fmtTokens(result.contextWindow)}`;
   document.getElementById("kpiBloat")!.textContent = Math.round(result.bloatRatio * 100) + "%";
+  document.getElementById("kpiBloatNote")!.textContent = `${result.bloatCount} turn(s) >~${fmtTokens(result.bloatThreshold)}`;
   document.getElementById("kpiRedundant")!.textContent = String(result.redundantPairs.length);
+  document.getElementById("kpiRedundantNote")!.textContent = "near-dup pastes";
   document.getElementById("kpiTurns")!.textContent = String(result.turns.length);
+  document.getElementById("kpiTurnsNote")!.textContent = result.turns.length > 16 ? "long conversation" : "in this chat";
 
   renderChart(result);
   renderRecommendations(result.recommendations);
