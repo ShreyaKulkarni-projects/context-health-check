@@ -1,0 +1,79 @@
+/*
+ * Ported verbatim from the original context-health-check.html prototype's
+ * :root block. This is the single source of truth for color tokens shared by
+ * packages/web-demo and packages/extension — do not re-derive or duplicate
+ * these values elsewhere.
+ */
+:root {
+  color-scheme: light;
+  --surface-1:      #fcfcfb;
+  --page:           #f9f9f7;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted:     #898781;
+  --gridline:       #e1e0d9;
+  --baseline:       #c3c2b7;
+  --border:         rgba(11,11,11,0.10);
+  --series-blue:    #2a78d6;
+  --series-blue-100:#cde2fb;
+  --series-blue-450:#2a78d6;
+  --status-good:      #0ca30c;
+  --status-warning:   #fab219;
+  --status-serious:   #ec835a;
+  --status-critical:  #d03b3b;
+  --good-wash:      rgba(12,163,12,0.08);
+  --warning-wash:   rgba(250,178,25,0.14);
+  --serious-wash:   rgba(236,131,90,0.12);
+  --critical-wash:  rgba(208,59,59,0.10);
+  --success-text:   #006300;
+  --card-radius:    14px;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page:           #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-blue:    #3987e5;
+    --series-blue-100:#184f95;
+    --series-blue-450:#3987e5;
+    --status-good:      #0ca30c;
+    --status-warning:   #fab219;
+    --status-serious:   #ec835a;
+    --status-critical:  #d03b3b;
+    --good-wash:      rgba(12,163,12,0.14);
+    --warning-wash:   rgba(250,178,25,0.16);
+    --serious-wash:   rgba(236,131,90,0.16);
+    --critical-wash:  rgba(208,59,59,0.16);
+    --success-text:   #0ca30c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1:      #1a1a19;
+  --page:           #0d0d0d;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --gridline:       #2c2c2a;
+  --baseline:       #383835;
+  --border:         rgba(255,255,255,0.10);
+  --series-blue:    #3987e5;
+  --series-blue-100:#184f95;
+  --series-blue-450:#3987e5;
+  --status-good:      #0ca30c;
+  --status-warning:   #fab219;
+  --status-serious:   #ec835a;
+  --status-critical:  #d03b3b;
+  --good-wash:      rgba(12,163,12,0.14);
+  --warning-wash:   rgba(250,178,25,0.16);
+  --serious-wash:   rgba(236,131,90,0.16);
+  --critical-wash:  rgba(208,59,59,0.16);
+  --success-text:   #0ca30c;
+}
