@@ -3,11 +3,14 @@ import type { ConversationTurn, SiteAdapter } from "./types.js";
 /**
  * NOTE ON SELECTORS: chosen from ChatGPT's long-standing, widely-documented
  * `data-message-author-role` attribute (present on every message turn for
- * years across chatgpt.com/chat.openai.com), not from a single-page guess.
- * Still: React SPA class names and wrapper structure drift, so this is
- * verified against the live site before ship (see repo commit history) and
- * falls back to the structural heuristic below if the attribute hook ever
- * stops matching.
+ * years across chatgpt.com/chat.openai.com), not from a single-page guess -
+ * but unlike the Claude adapter, this one is NOT yet confirmed against a live
+ * DOM inspection. A live-session check hit a full-page third-party ad
+ * overlay on chatgpt.com instead of the real app (see SHOWCASE.md), so this
+ * still needs verification before being trusted as-is. The mandatory
+ * structural-heuristic fallback below (and the paste-box degradation one
+ * level up in content-script.ts) means a wrong selector here degrades
+ * gracefully rather than breaking the panel either way.
  */
 const MESSAGE_SELECTOR = "[data-message-author-role]";
 const SCROLL_CONTAINER_SELECTORS = [

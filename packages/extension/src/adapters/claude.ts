@@ -1,37 +1,44 @@
 import type { ConversationTurn, SiteAdapter } from "./types.js";
 
 /**
- * NOTE ON SELECTORS: `[data-testid="user-message"]` for user turns is a
- * commonly-referenced, semantics-driven hook on claude.ai; assistant turns
- * are matched by the rendered-markdown wrapper class Anthropic uses for
- * Claude's own responses. As with the ChatGPT adapter, this is verified
- * against the live site before ship, and the structural fallback covers the
- * case where either hook stops matching after a redesign.
+ * Selectors verified live against claude.ai (2026-08) by inspecting the real
+ * DOM of an actual conversation, not guessed:
+ *  - `[data-testid='transcript-list']` is the scrollable container holding
+ *    every turn.
+ *  - `[data-testid='transcript-row']` wraps exactly one turn (user or
+ *    assistant) each.
+ *  - A row is a user turn iff it contains `[data-testid='user-message']`
+ *    (using that element's own text avoids picking up sibling action-button
+ *    labels that the row/article wrapper's textContent otherwise includes).
+ *  - Assistant turns render their markdown into a `.font-claude-response`
+ *    element, which is absent on user rows and gives exactly the response
+ *    text with no chrome around it.
+ * Still falls back to the structural heuristic below if any of this stops
+ * matching after a redesign - see SHOWCASE.md for why that fallback isn't
+ * optional.
  */
+const CONTAINER_SELECTOR = "[data-testid='transcript-list']";
+const ROW_SELECTOR = "[data-testid='transcript-row']";
 const USER_MESSAGE_SELECTOR = "[data-testid='user-message']";
-const ASSISTANT_MESSAGE_SELECTOR = "[data-testid='conversation-turn'] .font-claude-message, .font-claude-message";
-const SCROLL_CONTAINER_SELECTORS = [
-  "[data-testid='conversation-turn']",
-  "main",
-];
+const ASSISTANT_RESPONSE_SELECTOR = ".font-claude-response";
 
 function extractViaAttribute(container: Element): ConversationTurn[] {
-  const userNodes = Array.from(container.querySelectorAll<HTMLElement>(USER_MESSAGE_SELECTOR)).map((node) => ({
-    node,
-    speaker: "user" as const,
-  }));
-  const assistantNodes = Array.from(container.querySelectorAll<HTMLElement>(ASSISTANT_MESSAGE_SELECTOR)).map(
-    (node) => ({ node, speaker: "assistant" as const }),
-  );
-
-  const all = [...userNodes, ...assistantNodes].sort((a, b) => {
-    const pos = a.node.compareDocumentPosition(b.node);
-    return pos & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-  });
-
-  return all
-    .map(({ node, speaker }) => ({ speaker, text: (node.textContent ?? "").trim() }))
-    .filter((t) => t.text.length > 0);
+  const rows = Array.from(container.querySelectorAll<HTMLElement>(ROW_SELECTOR));
+  const turns: ConversationTurn[] = [];
+  for (const row of rows) {
+    const userMsg = row.querySelector<HTMLElement>(USER_MESSAGE_SELECTOR);
+    if (userMsg) {
+      const text = (userMsg.textContent ?? "").trim();
+      if (text) turns.push({ speaker: "user", text });
+      continue;
+    }
+    const response = row.querySelector<HTMLElement>(ASSISTANT_RESPONSE_SELECTOR);
+    if (response) {
+      const text = (response.textContent ?? "").trim();
+      if (text) turns.push({ speaker: "assistant", text });
+    }
+  }
+  return turns;
 }
 
 /**
@@ -55,11 +62,7 @@ export const claudeAdapter: SiteAdapter = {
   },
 
   getConversationContainer() {
-    for (const selector of SCROLL_CONTAINER_SELECTORS) {
-      const el = document.querySelector(selector);
-      if (el) return document.querySelector("main") ?? el;
-    }
-    return null;
+    return document.querySelector(CONTAINER_SELECTOR) ?? document.querySelector("main");
   },
 
   extractTurns(container) {
