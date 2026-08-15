@@ -38,6 +38,32 @@ KPI_GLOSSARY.forEach((entry) => {
   });
 });
 
+// ---------- Score breakdown: click the "?" next to the score to see exactly
+// how these points were lost, in this conversation's own numbers. ----------
+const scoreInfoBtn = document.getElementById("scoreInfoBtn") as HTMLElement;
+const scoreDetailCard = document.getElementById("scoreDetailCard") as HTMLElement;
+const scoreDetailText = document.getElementById("scoreDetailText") as HTMLElement;
+
+function scoreBreakdownText(result: AnalysisResult): string {
+  const { usagePenalty, bloatPenalty, redundancyPenalty, score } = result.score;
+  const u = Math.round(usagePenalty);
+  const b = Math.round(bloatPenalty);
+  const r = Math.round(redundancyPenalty);
+  return (
+    `Every conversation starts at 100 points. Points get subtracted for three things: ` +
+    `${u} for how much of the context window is used (worse above 50%, capped at 40), ` +
+    `${b} for bloat from oversized turns (capped at 30), and ` +
+    `${r} for redundant re-pastes (8 points per duplicate pair, capped at 24). ` +
+    `100 - ${u} - ${b} - ${r} = ${score}/100. ` +
+    `85+ is Healthy, 65-84 is Keep an eye on it, 40-64 is At risk, below 40 is Critical.`
+  );
+}
+
+scoreInfoBtn.addEventListener("click", () => {
+  scoreDetailCard.classList.toggle("show");
+  scoreInfoBtn.classList.toggle("active", scoreDetailCard.classList.contains("show"));
+});
+
 // ---------- Theme ----------
 const root = document.documentElement;
 const themeToggle = document.getElementById("themeToggle") as HTMLButtonElement;
@@ -225,15 +251,48 @@ function svgEl<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<strin
   return e;
 }
 
+function svgText(x: number, y: number, anchor: "start" | "middle" | "end", content: string): SVGTextElement {
+  const t = document.createElementNS(SVG_NS, "text");
+  t.setAttribute("x", String(x));
+  t.setAttribute("y", String(y));
+  t.setAttribute("text-anchor", anchor);
+  t.setAttribute("font-size", "8");
+  t.setAttribute("fill", "var(--text-muted)");
+  t.textContent = content;
+  return t;
+}
+
+// ---------- Turn inspector: click a dot on the chart to see exactly what
+// that turn cost, so individual turns are identifiable, not just a line. ----------
+const turnDetailCard = document.getElementById("turnDetailCard") as HTMLElement;
+const turnDetailLabel = document.getElementById("turnDetailLabel") as HTMLElement;
+const turnDetailText = document.getElementById("turnDetailText") as HTMLElement;
+let openTurnIndex: number | null = null;
+
+function showTurnDetail(index: number, turn: AnalysisResult["turns"][number], result: AnalysisResult) {
+  if (openTurnIndex === index) {
+    turnDetailCard.classList.remove("show");
+    openTurnIndex = null;
+    return;
+  }
+  openTurnIndex = index;
+  const pct = Math.round((turn.cumulativeTokens / result.contextWindow) * 100);
+  turnDetailLabel.textContent = `Turn ${index + 1} (${turn.speaker})`;
+  turnDetailText.textContent =
+    `${fmtTokens(turn.tokens)} tokens in this turn - ${fmtTokens(turn.cumulativeTokens)} total so far, ${pct}% of the context window.` +
+    (turn.bloat ? " Flagged as an oversized (bloat) turn - shown in red." : "");
+  turnDetailCard.classList.add("show");
+}
+
 function renderChart(result: AnalysisResult) {
   const svg = document.getElementById("chartSvg") as unknown as SVGSVGElement;
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   const W = 320,
-    H = 130,
-    padL = 30,
+    H = 150,
+    padL = 34,
     padR = 6,
-    padT = 6,
-    padB = 6;
+    padT = 8,
+    padB = 16;
   const plotW = W - padL - padR,
     plotH = H - padT - padB;
   const n = result.turns.length;
@@ -257,37 +316,50 @@ function renderChart(result: AnalysisResult) {
     svg.appendChild(svgEl("rect", { x: padL, y: y1, width: plotW, height: Math.max(0, y0 - y1), fill: z.css }));
   });
 
+  // Y axis: gridlines + token labels at 0 / half / full window, so the
+  // vertical position of a point can be read as an actual number of tokens.
+  [0, 0.5, 1].forEach((frac) => {
+    const v = frac * result.contextWindow;
+    const y = yAt(v);
+    svg.appendChild(svgEl("line", { x1: padL, x2: padL + plotW, y1: y, y2: y, stroke: "var(--gridline)", "stroke-width": 1 }));
+    svg.appendChild(svgText(padL - 4, y + 3, "end", fmtTokens(v)));
+  });
+
   svg.appendChild(svgEl("line", { x1: padL, x2: padL + plotW, y1: padT + plotH, y2: padT + plotH, stroke: "var(--baseline)", "stroke-width": 1 }));
 
   if (n === 0) {
-    const empty = document.createElementNS(SVG_NS, "text");
-    empty.setAttribute("x", String(W / 2));
-    empty.setAttribute("y", String(H / 2));
-    empty.setAttribute("text-anchor", "middle");
-    empty.setAttribute("font-size", "10");
-    empty.setAttribute("fill", "var(--text-muted)");
-    empty.textContent = "No turns yet";
-    svg.appendChild(empty);
+    svg.appendChild(svgText(W / 2, H / 2, "middle", "No turns yet"));
     return;
   }
+
+  // X axis: turn-number ticks at the start, middle, and end so a point can be
+  // read as "turn N", not just a position along the line.
+  const tickIndices = Array.from(new Set(n <= 2 ? [0, n - 1] : [0, Math.floor((n - 1) / 2), n - 1]));
+  tickIndices.forEach((i) => {
+    svg.appendChild(svgText(xAt(i), padT + plotH + 12, "middle", String(i + 1)));
+  });
 
   let pathD = "M " + xAt(0) + " " + yAt(0);
   for (let i = 0; i < n; i++) pathD += " L " + xAt(i) + " " + yAt(result.turns[i].cumulativeTokens);
   svg.appendChild(svgEl("path", { d: pathD, fill: "none", stroke: "var(--series-blue)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
 
-  // Visible per-turn dots - without these the chart is just a thin line that's
-  // easy to mistake for "not rendering" at this panel's compact size.
+  // Visible, clickable per-turn dots - without these the chart is just a thin
+  // line that's easy to mistake for "not rendering," and there's no way to
+  // tell which point is which turn.
   result.turns.forEach((t, i) => {
-    svg.appendChild(
-      svgEl("circle", {
-        cx: xAt(i),
-        cy: yAt(t.cumulativeTokens),
-        r: t.bloat ? 4 : 3,
-        fill: t.bloat ? "var(--status-critical)" : "var(--series-blue)",
-        stroke: "var(--surface-1)",
-        "stroke-width": 1.5,
-      }),
-    );
+    const circle = svgEl("circle", {
+      cx: xAt(i),
+      cy: yAt(t.cumulativeTokens),
+      r: openTurnIndex === i ? 6 : t.bloat ? 4 : 3,
+      fill: t.bloat ? "var(--status-critical)" : "var(--series-blue)",
+      stroke: "var(--surface-1)",
+      "stroke-width": 1.5,
+    });
+    circle.addEventListener("click", () => {
+      showTurnDetail(i, t, result);
+      renderChart(result); // re-render so the clicked dot's highlight radius shows
+    });
+    svg.appendChild(circle);
   });
 }
 
@@ -304,6 +376,7 @@ function render(result: AnalysisResult) {
     result.turns.length === 0
       ? "Open a conversation on claude.ai or chatgpt.com to see its context health."
       : `${fmtPct(result.peakUsagePct)} of the context window used, ${Math.round(result.bloatRatio * 100)}% bloat.`;
+  scoreDetailText.textContent = scoreBreakdownText(result);
 
   document.getElementById("kpiUsage")!.textContent = fmtPct(result.peakUsagePct);
   document.getElementById("kpiUsageNote")!.textContent = `${fmtTokens(result.totalTokens)}/${fmtTokens(result.contextWindow)}`;

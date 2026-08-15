@@ -35,6 +35,32 @@ KPI_GLOSSARY.forEach((entry) => {
   });
 });
 
+// ---------- Score breakdown: click the "?" next to the score to see exactly
+// how these points were lost, in this conversation's own numbers. ----------
+const scoreInfoBtn = document.getElementById("scoreInfoBtn") as HTMLElement;
+const scoreDetailCard = document.getElementById("scoreDetailCard") as HTMLElement;
+const scoreDetailText = document.getElementById("scoreDetailText") as HTMLElement;
+
+function scoreBreakdownText(result: AnalysisResult): string {
+  const { usagePenalty, bloatPenalty, redundancyPenalty, score } = result.score;
+  const u = Math.round(usagePenalty);
+  const b = Math.round(bloatPenalty);
+  const r = Math.round(redundancyPenalty);
+  return (
+    `Every conversation starts at 100 points. Points get subtracted for three things: ` +
+    `${u} for how much of the context window is used (worse above 50%, capped at 40), ` +
+    `${b} for bloat from oversized turns (capped at 30), and ` +
+    `${r} for redundant re-pastes (8 points per duplicate pair, capped at 24). ` +
+    `100 - ${u} - ${b} - ${r} = ${score}/100. ` +
+    `85+ is Healthy, 65-84 is Keep an eye on it, 40-64 is At risk, below 40 is Critical.`
+  );
+}
+
+scoreInfoBtn.addEventListener("click", () => {
+  scoreDetailCard.classList.toggle("show");
+  scoreInfoBtn.classList.toggle("active", scoreDetailCard.classList.contains("show"));
+});
+
 // ---------- Theme ----------
 const root = document.documentElement;
 const themeToggle = document.getElementById("themeToggle") as HTMLButtonElement;
@@ -363,6 +389,7 @@ function runAnalysis() {
   (document.getElementById("meterFill") as HTMLElement).style.width = result.score.score + "%";
   (document.getElementById("meterFill") as HTMLElement).style.background = result.score.grade.colorVar;
   document.getElementById("scoreDesc")!.textContent = describeScore(result);
+  scoreDetailText.textContent = scoreBreakdownText(result);
 
   document.getElementById("kpiUsage")!.textContent = Math.min(999, Math.round(result.peakUsagePct)) + "%";
   document.getElementById("kpiUsageNote")!.textContent = fmtTokens(result.totalTokens) + " est. tokens of " + fmtTokens(windowSize);
