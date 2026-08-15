@@ -14,7 +14,7 @@ function findAdapter(): SiteAdapter | undefined {
 
 function send(message: ContentMessage) {
   chrome.runtime.sendMessage(message).catch(() => {
-    // No listener yet (side panel not open) — safe to ignore.
+    // No listener yet (side panel not open) - safe to ignore.
   });
 }
 

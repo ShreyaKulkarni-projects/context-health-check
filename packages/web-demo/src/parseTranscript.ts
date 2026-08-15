@@ -2,7 +2,7 @@ import type { ConversationTurn } from "@context-health/core";
 
 /**
  * Regex-based speaker-label parser for the paste-box case. This lives ONLY in
- * web-demo — core never touches a DOM or a raw pasted string with a
+ * web-demo - core never touches a DOM or a raw pasted string with a
  * speaker-label regex; it only ever receives already-normalized
  * ConversationTurn[]. The extension's DOM adapters normalize turns straight
  * from the page, bypassing this parser entirely.

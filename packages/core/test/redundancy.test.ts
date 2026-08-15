@@ -4,7 +4,7 @@ import { CharHeuristicEstimator } from "../src/tokenizers/charHeuristic.js";
 
 const estimator = new CharHeuristicEstimator();
 
-// >300 tokens at ~4 chars/token means >1200 chars — big enough to clear the
+// >300 tokens at ~4 chars/token means >1200 chars - big enough to clear the
 // redundancy candidate-size floor.
 const bigBlock = (seed: string) => (seed + " ").repeat(120);
 

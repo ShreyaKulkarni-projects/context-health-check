@@ -51,7 +51,7 @@ describe("computeScore boundaries", () => {
   });
 
   it("score clamps at 0 when raw goes negative (bounded separately from the 94-point penalty ceiling)", () => {
-    // clamp(100 - usagePenalty - bloatPenalty - redundancyPenalty, 0, 100) — verify the
+    // clamp(100 - usagePenalty - bloatPenalty - redundancyPenalty, 0, 100) - verify the
     // clamp itself, independent of computeScore's real penalty ceiling.
     expect(clamp(100 - 94, 0, 100)).toBe(6);
     expect(clamp(-5, 0, 100)).toBe(0);

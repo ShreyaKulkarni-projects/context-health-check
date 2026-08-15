@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Context Health Check",
-  "description": "Live context-rot diagnosis for claude.ai and chatgpt.com — a persistent side panel that scores your conversation as you chat.",
+  "description": "Live context-rot diagnosis for claude.ai and chatgpt.com - a persistent side panel that scores your conversation as you chat.",
   "version": "0.1.0",
   "icons": {
     "16": "icons/icon16.png",

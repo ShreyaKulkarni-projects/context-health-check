@@ -1,7 +1,7 @@
 /*
  * Ported verbatim from the original context-health-check.html prototype's
  * :root block. This is the single source of truth for color tokens shared by
- * packages/web-demo and packages/extension — do not re-derive or duplicate
+ * packages/web-demo and packages/extension - do not re-derive or duplicate
  * these values elsewhere.
  */
 :root {

@@ -9,7 +9,7 @@ export interface AnthropicApiEstimatorOptions {
 /**
  * Opt-in, exact-count estimator for Claude models via Anthropic's `count_tokens`
  * endpoint. Requires a user-supplied API key and makes a network call directly
- * to Anthropic — never through any server of ours, because there is no server
+ * to Anthropic - never through any server of ours, because there is no server
  * of ours. Off by default; the default experience (CharHeuristicEstimator)
  * works fully offline with zero keys and zero network calls.
  *

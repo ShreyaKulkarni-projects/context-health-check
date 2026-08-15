@@ -1,7 +1,7 @@
 /**
  * JS-side mirror of the resolved hex values in ./theme.css, for contexts that
  * need a raw color (e.g. generating a downloaded score-card image) rather
- * than a CSS custom property reference. Keep in sync with theme.css by hand —
+ * than a CSS custom property reference. Keep in sync with theme.css by hand -
  * both are ported from the same source (the original HTML prototype).
  */
 export const THEME = {

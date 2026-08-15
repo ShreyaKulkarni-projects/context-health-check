@@ -26,7 +26,7 @@ const SIMILARITY_THRESHOLD = 0.45;
  *
  * Bloat detection still recomputes the threshold from the full token-count
  * history on each call (the median can shift as new turns arrive), which is
- * O(n) per call — cheap compared to redundancy's pairwise comparison.
+ * O(n) per call - cheap compared to redundancy's pairwise comparison.
  */
 export class ConversationAnalyzer {
   private readonly contextWindow: number;

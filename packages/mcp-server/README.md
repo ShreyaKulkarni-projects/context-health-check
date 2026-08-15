@@ -1,6 +1,6 @@
 # @context-health/mcp-server
 
-A local, stdio-transport [MCP](https://modelcontextprotocol.io) server that exposes the Context Health Check scoring engine as tools — so Claude Desktop or Claude Code can self-diagnose a session's own context rot.
+A local, stdio-transport [MCP](https://modelcontextprotocol.io) server that exposes the Context Health Check scoring engine as tools - so Claude Desktop or Claude Code can self-diagnose a session's own context rot.
 
 Backed entirely by [`@context-health/core`](../core); no network calls, no hosting, runs on your machine.
 
@@ -24,7 +24,7 @@ All three take the same input:
 }
 ```
 
-`contextWindow` is optional (defaults to 200,000 — Claude's standard window).
+`contextWindow` is optional (defaults to 200,000 - Claude's standard window).
 
 ## Setup
 
@@ -77,4 +77,4 @@ Or launch the interactive inspector UI (no `--cli`) to call tools by hand.
 
 ## Remote/OAuth (v2)
 
-This is a **local, stdio-only** server in v1 — no hosting, no auth, works the moment you add it to your config. See [REMOTE.md](./REMOTE.md) for the documented plan to add a remote, OAuth-authenticated transport for a future Connectors Directory submission.
+This is a **local, stdio-only** server in v1 - no hosting, no auth, works the moment you add it to your config. See [REMOTE.md](./REMOTE.md) for the documented plan to add a remote, OAuth-authenticated transport for a future Connectors Directory submission.

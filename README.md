@@ -1,12 +1,12 @@
 # Context Health Check
 
-Diagnoses "context rot" in AI chat sessions in real time — a live health score, not just a token counter.
+Diagnoses "context rot" in AI chat sessions in real time - a live health score, not just a token counter.
 
 ## The problem
 
-**Context rot** is the documented phenomenon where an LLM's recall accuracy degrades as a conversation grows, well before it hits the hard token limit. Chroma's 2025 study across 18 frontier models found this degradation is universal — accuracy drops with input length even when the relevant information is still technically "in context." Stanford's "Lost in the Middle" paper showed the same effect concretely: retrieval accuracy falling from roughly 70–75% to 55–60% once a prompt holds around 20 retrieved documents, purely from position and volume, not relevance. Long context windows solve for *fitting* information in; they don't solve for the model still *finding* it once it's buried in there.
+**Context rot** is the documented phenomenon where an LLM's recall accuracy degrades as a conversation grows, well before it hits the hard token limit. Chroma's 2025 study across 18 frontier models found this degradation is universal - accuracy drops with input length even when the relevant information is still technically "in context." Stanford's "Lost in the Middle" paper showed the same effect concretely: retrieval accuracy falling from roughly 70–75% to 55–60% once a prompt holds around 20 retrieved documents, purely from position and volume, not relevance. Long context windows solve for *fitting* information in; they don't solve for the model still *finding* it once it's buried in there.
 
-Anthropic's own [Claude Cookbook](https://platform.claude.com/cookbook/tool-use-context-engineering-context-engineering-tools) prescribes three mitigations for this: **tool-result clearing**, **compaction**, and **memory**. What it doesn't tell you is *when* to reach for which one — whether the conversation in front of you right now is fine, drifting, or already past the point where the model is quietly guessing. Context Health Check is that missing diagnosis layer: it scores a conversation 0–100, tells you exactly what's driving the score down (bloat, redundant re-pastes, raw window usage), and maps the result directly back to whichever of the three Cookbook primitives actually fixes it.
+Anthropic's own [Claude Cookbook](https://platform.claude.com/cookbook/tool-use-context-engineering-context-engineering-tools) prescribes three mitigations for this: **tool-result clearing**, **compaction**, and **memory**. What it doesn't tell you is *when* to reach for which one - whether the conversation in front of you right now is fine, drifting, or already past the point where the model is quietly guessing. Context Health Check is that missing diagnosis layer: it scores a conversation 0–100, tells you exactly what's driving the score down (bloat, redundant re-pastes, raw window usage), and maps the result directly back to whichever of the three Cookbook primitives actually fixes it.
 
 ## See it live
 
@@ -14,7 +14,7 @@ Anthropic's own [Claude Cookbook](https://platform.claude.com/cookbook/tool-use-
 >
 > `![Side panel live on claude.ai](docs/sidepanel-demo.gif)`
 
-Don't want to install anything first? Try the [zero-install web demo](packages/web-demo) — paste a conversation, get a score, nothing leaves your browser.
+Don't want to install anything first? Try the [zero-install web demo](packages/web-demo) - paste a conversation, get a score, nothing leaves your browser.
 
 ## Quickstart
 
@@ -66,7 +66,7 @@ One static HTML file, no server, no build step for the person opening it.
 
 ## Architecture
 
-Three front doors, one scoring engine — the algorithm exists in exactly one place, and everything else imports it.
+Three front doors, one scoring engine - the algorithm exists in exactly one place, and everything else imports it.
 
 ```
 ┌─────────────────────┐   ┌─────────────────────┐   ┌─────────────────────┐
@@ -87,7 +87,7 @@ Three front doors, one scoring engine — the algorithm exists in exactly one pl
                   └──────────────────────────────────────┘
 ```
 
-- **`packages/core`** parses `{ speaker, text, timestamp? }` turns, estimates tokens, flags bloated and redundant turns, computes a 0–100 score with a risk zone, and generates prioritized recommendations. It never touches a DOM or parses a raw pasted string — every caller normalizes into typed turns first.
+- **`packages/core`** parses `{ speaker, text, timestamp? }` turns, estimates tokens, flags bloated and redundant turns, computes a 0–100 score with a risk zone, and generates prioritized recommendations. It never touches a DOM or parses a raw pasted string - every caller normalizes into typed turns first.
 - **`packages/extension`** reads the conversation straight off the page via a `MutationObserver` and per-site adapter, re-scoring incrementally as new turns arrive.
 - **`packages/mcp-server`** exposes the same engine as three MCP tools so Claude Desktop/Code can score their own session.
 - **`packages/web-demo`** is the original single-file HTML prototype, now importing its scoring logic from `core` instead of carrying its own copy.
@@ -105,4 +105,4 @@ npm run build          # all packages
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).

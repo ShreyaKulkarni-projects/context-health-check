@@ -27,4 +27,4 @@ const output = template.replace("<!-- BUILD:INJECT_BUNDLE -->", `<script>\n${bun
 mkdirSync(join(__dirname, "dist"), { recursive: true });
 writeFileSync(join(__dirname, "dist/index.html"), output);
 
-console.log("Built packages/web-demo/dist/index.html — a single, dependency-free static file.");
+console.log("Built packages/web-demo/dist/index.html - a single, dependency-free static file.");

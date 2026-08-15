@@ -27,7 +27,7 @@ export function jaccard(a: Set<string>, b: Set<string>): number {
 /**
  * Compares every pair of turns with >300 tokens via Jaccard similarity over
  * 16-char/stride-8 shingles, flagging pairs above 0.45 similarity as redundant
- * re-pastes. O(n^2) in candidate count by design — see ConversationAnalyzer
+ * re-pastes. O(n^2) in candidate count by design - see ConversationAnalyzer
  * for how incremental mode avoids re-running this over the full history.
  */
 export function detectRedundancy(
