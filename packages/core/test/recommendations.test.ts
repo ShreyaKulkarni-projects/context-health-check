@@ -105,4 +105,36 @@ describe("buildRecommendations priority ordering", () => {
     });
     expect(recs.map((r) => r.id)).toEqual(["high-usage", "high-bloat", "redundant-pastes"]);
   });
+
+  it("every recommendation, for every rule, carries non-empty why/how/impact", () => {
+    const scenarios = [
+      { turnCount: 4, peakUsagePct: 10, bloat: noBloat, redundantPairs: noPairs }, // good-shape
+      { turnCount: 4, peakUsagePct: 90, bloat: noBloat, redundantPairs: noPairs }, // high-usage
+      { turnCount: 9, peakUsagePct: 10, bloat: heavyBloat, redundantPairs: noPairs }, // high-bloat
+      { turnCount: 6, peakUsagePct: 10, bloat: noBloat, redundantPairs: onePair }, // redundant-pastes
+      { turnCount: 17, peakUsagePct: 10, bloat: noBloat, redundantPairs: noPairs }, // consider-compaction
+    ];
+    for (const scenario of scenarios) {
+      for (const rec of buildRecommendations(scenario)) {
+        expect(rec.why.length).toBeGreaterThan(0);
+        expect(Array.isArray(rec.how)).toBe(true);
+        expect(rec.how.length).toBeGreaterThan(0);
+        for (const step of rec.how) expect(step.length).toBeGreaterThan(0);
+        expect(rec.impact.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("redundant-pastes' why/how reference the specific turn numbers", () => {
+    const recs = buildRecommendations({
+      turnCount: 6,
+      peakUsagePct: 10,
+      bloat: noBloat,
+      redundantPairs: onePair,
+    });
+    const rec = recs.find((r) => r.id === "redundant-pastes")!;
+    expect(rec.why).toContain("Turn 2");
+    expect(rec.why).toContain("turn 5");
+    expect(rec.how.some((step) => step.includes("turn 2") && step.includes("turn 5"))).toBe(true);
+  });
 });

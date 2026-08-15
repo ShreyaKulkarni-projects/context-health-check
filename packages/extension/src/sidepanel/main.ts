@@ -4,21 +4,38 @@ import type { ContentMessage } from "../content-script.js";
 import type { ConversationTurn } from "../adapters/types.js";
 import { loadSettings, saveSettings, type PanelSettings } from "./settings.js";
 
-// ---------- KPI glossary (hover explanation; the note line below each value
-// stays a compact live number, set in render()) ----------
-const KPI_INFO_IDS: Record<(typeof KPI_GLOSSARY)[number]["key"], { info: string; tile: string }> = {
-  peakUsage: { info: "kpiUsageInfo", tile: "kpiUsageTile" },
-  bloat: { info: "kpiBloatInfo", tile: "kpiBloatTile" },
-  redundant: { info: "kpiRedundantInfo", tile: "kpiRedundantTile" },
-  turns: { info: "kpiTurnsInfo", tile: "kpiTurnsTile" },
+// ---------- KPI glossary: click a "?" to expand what/why/fix inline. Native
+// hover tooltips are unreliable in a narrow side panel (delayed, easy to
+// miss, don't work on touch) - a click toggles a shared detail card instead,
+// so the explanation is always reachable with one deliberate tap. ----------
+const KPI_INFO_IDS: Record<(typeof KPI_GLOSSARY)[number]["key"], string> = {
+  peakUsage: "kpiUsageInfo",
+  bloat: "kpiBloatInfo",
+  redundant: "kpiRedundantInfo",
+  turns: "kpiTurnsInfo",
 };
+const kpiDetailCard = document.getElementById("kpiDetailCard") as HTMLElement;
+const kpiDetailLabel = document.getElementById("kpiDetailLabel") as HTMLElement;
+const kpiDetailText = document.getElementById("kpiDetailText") as HTMLElement;
+let openKpiKey: string | null = null;
+
 KPI_GLOSSARY.forEach((entry) => {
-  const ids = KPI_INFO_IDS[entry.key];
-  const title = `${entry.oneLiner}. ${entry.detail}`;
-  const info = document.getElementById(ids.info);
-  const tile = document.getElementById(ids.tile);
-  if (info) info.title = title;
-  if (tile) tile.title = title;
+  const btn = document.getElementById(KPI_INFO_IDS[entry.key]);
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const allInfoButtons = Object.values(KPI_INFO_IDS).map((id) => document.getElementById(id));
+    if (openKpiKey === entry.key) {
+      kpiDetailCard.classList.remove("show");
+      openKpiKey = null;
+      allInfoButtons.forEach((b) => b?.classList.remove("active"));
+      return;
+    }
+    openKpiKey = entry.key;
+    kpiDetailLabel.textContent = entry.label;
+    kpiDetailText.textContent = `${entry.oneLiner}. ${entry.detail}`;
+    kpiDetailCard.classList.add("show");
+    allInfoButtons.forEach((b) => b?.classList.toggle("active", b === btn));
+  });
 });
 
 // ---------- Theme ----------
@@ -87,7 +104,7 @@ apiKeyInput.addEventListener("change", async () => {
 // ---------- Analyzer state ----------
 // Fast path: when the incoming snapshot is the previous turns array plus new
 // turns appended (the overwhelmingly common case in a live chat), only the
-// new turns go through addTurn() — O(1) work per new turn, not a re-scan of
+// new turns go through addTurn() - O(1) work per new turn, not a re-scan of
 // the whole transcript. Slow path: if anything in the existing history
 // changed (an in-place edit, or the debounced snapshot caught the final
 // turn mid-stream and its text differs from what we last saw), reset and
@@ -140,6 +157,17 @@ function fmtTokens(v: number): string {
   return Math.round(v).toString();
 }
 
+function labeledSection(label: string, contentEl: HTMLElement): HTMLElement {
+  const section = document.createElement("div");
+  section.className = "rec-section";
+  const labelEl = document.createElement("div");
+  labelEl.className = "rec-label";
+  labelEl.textContent = label;
+  section.appendChild(labelEl);
+  section.appendChild(contentEl);
+  return section;
+}
+
 function renderRecommendations(recommendations: Recommendation[]) {
   const list = document.getElementById("recList")!;
   list.innerHTML = "";
@@ -150,16 +178,40 @@ function renderRecommendations(recommendations: Recommendation[]) {
     icon.className = "rec-icon";
     icon.style.background = r.colorVar;
     icon.textContent = ICONS[r.icon];
+
     const body = document.createElement("div");
     body.className = "rec-body";
+
     const title = document.createElement("div");
     title.className = "rec-title";
     title.textContent = r.title;
+
     const desc = document.createElement("div");
     desc.className = "rec-desc";
     desc.textContent = r.description;
+
+    const why = document.createElement("p");
+    why.className = "rec-why";
+    why.textContent = r.why;
+
+    const steps = document.createElement("ol");
+    steps.className = "rec-steps";
+    r.how.forEach((step) => {
+      const li = document.createElement("li");
+      li.textContent = step;
+      steps.appendChild(li);
+    });
+
+    const impact = document.createElement("p");
+    impact.className = "rec-impact";
+    impact.textContent = r.impact;
+
     body.appendChild(title);
     body.appendChild(desc);
+    body.appendChild(labeledSection("Why", why));
+    body.appendChild(labeledSection("How to fix it", steps));
+    body.appendChild(labeledSection("After", impact));
+
     item.appendChild(icon);
     item.appendChild(body);
     list.appendChild(item);
@@ -177,7 +229,7 @@ function renderChart(result: AnalysisResult) {
   const svg = document.getElementById("chartSvg") as unknown as SVGSVGElement;
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   const W = 320,
-    H = 120,
+    H = 130,
     padL = 30,
     padR = 6,
     padT = 6,
@@ -207,11 +259,36 @@ function renderChart(result: AnalysisResult) {
 
   svg.appendChild(svgEl("line", { x1: padL, x2: padL + plotW, y1: padT + plotH, y2: padT + plotH, stroke: "var(--baseline)", "stroke-width": 1 }));
 
-  if (n === 0) return;
+  if (n === 0) {
+    const empty = document.createElementNS(SVG_NS, "text");
+    empty.setAttribute("x", String(W / 2));
+    empty.setAttribute("y", String(H / 2));
+    empty.setAttribute("text-anchor", "middle");
+    empty.setAttribute("font-size", "10");
+    empty.setAttribute("fill", "var(--text-muted)");
+    empty.textContent = "No turns yet";
+    svg.appendChild(empty);
+    return;
+  }
 
   let pathD = "M " + xAt(0) + " " + yAt(0);
   for (let i = 0; i < n; i++) pathD += " L " + xAt(i) + " " + yAt(result.turns[i].cumulativeTokens);
   svg.appendChild(svgEl("path", { d: pathD, fill: "none", stroke: "var(--series-blue)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+
+  // Visible per-turn dots - without these the chart is just a thin line that's
+  // easy to mistake for "not rendering" at this panel's compact size.
+  result.turns.forEach((t, i) => {
+    svg.appendChild(
+      svgEl("circle", {
+        cx: xAt(i),
+        cy: yAt(t.cumulativeTokens),
+        r: t.bloat ? 4 : 3,
+        fill: t.bloat ? "var(--status-critical)" : "var(--series-blue)",
+        stroke: "var(--surface-1)",
+        "stroke-width": 1.5,
+      }),
+    );
+  });
 }
 
 function render(result: AnalysisResult) {
@@ -251,7 +328,7 @@ function showFallback() {
   liveView.style.display = "none";
   pasteBox.style.display = "block";
   statusLine.classList.add("fallback");
-  statusText.textContent = "Automatic detection unavailable — paste your conversation below.";
+  statusText.textContent = "Automatic detection unavailable - paste your conversation below.";
 }
 
 function showLive() {
@@ -286,7 +363,7 @@ async function requestInitialTurns() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id) return;
     chrome.tabs.sendMessage(tab.id, { type: "request-turns" }, (response: ContentMessage | undefined) => {
-      if (chrome.runtime.lastError || !response) return; // content script not injected on this page — stay on empty live view
+      if (chrome.runtime.lastError || !response) return; // content script not injected on this page - stay on empty live view
       if (response.type === "turns") {
         showLive();
         ingestTurns(response.turns);
@@ -295,7 +372,7 @@ async function requestInitialTurns() {
       }
     });
   } catch {
-    // Panel opened without an active supported tab — leave the empty live view showing.
+    // Panel opened without an active supported tab - leave the empty live view showing.
   }
 }
 

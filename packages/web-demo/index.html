@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Context Health Check — is your AI conversation about to hit context rot?</title>
+<title>Context Health Check - is your AI conversation about to hit context rot?</title>
 <style>
   :root {
     color-scheme: light;
@@ -192,12 +192,18 @@
   }
   .kpi-tile .label { font-size: 11.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; display: flex; align-items: center; gap: 5px; }
   .kpi-tile .label .info-dot {
-    width: 13px; height: 13px; border-radius: 50%; border: 1px solid var(--text-muted); color: var(--text-muted);
-    font-size: 9.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
-    text-transform: none; cursor: help; flex: none;
+    width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--text-muted); color: var(--text-muted);
+    font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+    text-transform: none; cursor: pointer; flex: none; background: transparent; padding: 0; font-family: var(--sans);
   }
+  .kpi-tile .label .info-dot:hover, .kpi-tile .label .info-dot.active { background: var(--series-blue); color: white; border-color: var(--series-blue); }
   .kpi-tile .value { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
   .kpi-tile .note { font-size: 11.5px; color: var(--text-secondary); }
+
+  .kpi-detail-card { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--gridline); }
+  .kpi-detail-card.show { display: block; }
+  .kpi-detail-label { font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+  .kpi-detail-text { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; }
 
   .chart-card { margin-top: 18px; }
   .chart-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 8px; }
@@ -228,9 +234,19 @@
     width: 26px; height: 26px; border-radius: 7px; flex: none; display: flex; align-items: center;
     justify-content: center; font-size: 13px; font-weight: 700; color: white;
   }
+  .rec-body { min-width: 0; }
   .rec-body .rec-title { font-weight: 700; font-size: 13.5px; margin-bottom: 3px; }
   .rec-body .rec-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
   .rec-body .rec-desc code { background: var(--page); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  .rec-body .rec-section { margin-top: 10px; }
+  .rec-body .rec-label {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-muted); margin-bottom: 4px;
+  }
+  .rec-body .rec-why, .rec-body .rec-impact { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; margin: 0; }
+  .rec-body .rec-steps { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.65; }
+  .rec-body .rec-steps li { margin-bottom: 2px; }
+  .rec-body .rec-impact { padding: 8px 10px; background: var(--page); border-radius: 8px; border: 1px solid var(--border); }
 
   .share-card { margin-top: 18px; }
   .share-inner {
@@ -268,8 +284,8 @@
 
   <section class="hero">
     <h1>Is your AI conversation about to hit context rot?</h1>
-    <p class="sub">Paste a Claude or ChatGPT conversation and get a health score in 10 seconds — where context is being wasted, when recall risk starts climbing, and exactly which fix to reach for.</p>
-    <p class="credit">Built on the context-management primitives from <a href="https://platform.claude.com/cookbook/tool-use-context-engineering-context-engineering-tools" target="_blank" rel="noopener">Anthropic's own context engineering guide</a> — tool-result clearing, compaction, and memory.</p>
+    <p class="sub">Paste a Claude or ChatGPT conversation and get a health score in 10 seconds - where context is being wasted, when recall risk starts climbing, and exactly which fix to reach for.</p>
+    <p class="credit">Built on the context-management primitives from <a href="https://platform.claude.com/cookbook/tool-use-context-engineering-context-engineering-tools" target="_blank" rel="noopener">Anthropic's own context engineering guide</a> - tool-result clearing, compaction, and memory.</p>
   </header>
 
   <section class="card input-card">
@@ -277,10 +293,10 @@
       <div class="field">
         <label for="modelSelect">Context window</label>
         <select id="modelSelect">
-          <option value="200000">Claude — 200K tokens</option>
-          <option value="1000000">Claude — 1M tokens (long-context)</option>
-          <option value="128000">GPT-4o / ChatGPT — 128K tokens</option>
-          <option value="400000">GPT-5-class — 400K tokens</option>
+          <option value="200000">Claude - 200K tokens</option>
+          <option value="1000000">Claude - 1M tokens (long-context)</option>
+          <option value="128000">GPT-4o / ChatGPT - 128K tokens</option>
+          <option value="400000">GPT-5-class - 400K tokens</option>
           <option value="custom">Custom…</option>
         </select>
       </div>
@@ -297,30 +313,34 @@
     </div>
 
     <div class="helper-row">
-      <div class="hint">We estimate tokens client-side (~4 characters/token) — nothing you paste leaves your browser. Use <code>Human:</code>/<code>Assistant:</code> (or <code>User:</code>/<code>Claude:</code>) at the start of a line to mark turns.</div>
+      <div class="hint">We estimate tokens client-side (~4 characters/token) - nothing you paste leaves your browser. Use <code>Human:</code>/<code>Assistant:</code> (or <code>User:</code>/<code>Claude:</code>) at the start of a line to mark turns.</div>
       <div class="btn-row">
         <button class="btn-ghost" id="loadDemo" type="button">Load a demo transcript</button>
         <button class="btn-secondary" id="clearBtn" type="button">Clear</button>
         <button class="btn-primary" id="analyzeBtn" type="button">Analyze →</button>
       </div>
     </div>
-    <div class="empty-note" id="emptyNote">Paste a conversation first — or click "Load a demo transcript" to see how it works.</div>
+    <div class="empty-note" id="emptyNote">Paste a conversation first - or click "Load a demo transcript" to see how it works.</div>
   </section>
 
   <section id="results">
     <div class="score-grid">
       <div class="card score-card">
-        <div class="score-hero"><span class="num" id="scoreNum">—</span><span class="max">/100</span></div>
-        <div class="score-label" id="scoreLabel"><span class="dot"></span><span id="scoreLabelText">—</span></div>
+        <div class="score-hero"><span class="num" id="scoreNum">-</span><span class="max">/100</span></div>
+        <div class="score-label" id="scoreLabel"><span class="dot"></span><span id="scoreLabelText">-</span></div>
         <div class="meter-track"><div class="meter-fill" id="meterFill" style="width:0%"></div></div>
         <p class="score-desc" id="scoreDesc">Paste a conversation and hit Analyze to see your context health score.</p>
       </div>
       <div class="card">
         <div class="kpi-row">
-          <div class="kpi-tile" id="kpiUsageTile"><div class="label">Peak window used <span class="info-dot" id="kpiUsageInfo">?</span></div><div class="value" id="kpiUsage">—</div><div class="note" id="kpiUsageNote">of context window</div></div>
-          <div class="kpi-tile" id="kpiBloatTile"><div class="label">Re-fetchable bloat <span class="info-dot" id="kpiBloatInfo">?</span></div><div class="value" id="kpiBloat">—</div><div class="note" id="kpiBloatNote">of tokens in oversized turns</div></div>
-          <div class="kpi-tile" id="kpiRedundantTile"><div class="label">Redundant re-pastes <span class="info-dot" id="kpiRedundantInfo">?</span></div><div class="value" id="kpiRedundant">—</div><div class="note">near-duplicate large blocks</div></div>
-          <div class="kpi-tile" id="kpiTurnsTile"><div class="label">Turns analyzed <span class="info-dot" id="kpiTurnsInfo">?</span></div><div class="value" id="kpiTurns">—</div><div class="note" id="kpiTurnsNote">detected in transcript</div></div>
+          <div class="kpi-tile" id="kpiUsageTile"><div class="label">Peak window used <button type="button" class="info-dot" id="kpiUsageInfo" aria-label="What is this?">?</button></div><div class="value" id="kpiUsage">-</div><div class="note" id="kpiUsageNote">of context window</div></div>
+          <div class="kpi-tile" id="kpiBloatTile"><div class="label">Re-fetchable bloat <button type="button" class="info-dot" id="kpiBloatInfo" aria-label="What is this?">?</button></div><div class="value" id="kpiBloat">-</div><div class="note" id="kpiBloatNote">of tokens in oversized turns</div></div>
+          <div class="kpi-tile" id="kpiRedundantTile"><div class="label">Redundant re-pastes <button type="button" class="info-dot" id="kpiRedundantInfo" aria-label="What is this?">?</button></div><div class="value" id="kpiRedundant">-</div><div class="note">near-duplicate large blocks</div></div>
+          <div class="kpi-tile" id="kpiTurnsTile"><div class="label">Turns analyzed <button type="button" class="info-dot" id="kpiTurnsInfo" aria-label="What is this?">?</button></div><div class="value" id="kpiTurns">-</div><div class="note" id="kpiTurnsNote">detected in transcript</div></div>
+        </div>
+        <div class="kpi-detail-card" id="kpiDetailCard">
+          <div class="kpi-detail-label" id="kpiDetailLabel"></div>
+          <div class="kpi-detail-text" id="kpiDetailText"></div>
         </div>
       </div>
     </div>
@@ -353,7 +373,7 @@
     <div class="card share-card">
       <div class="share-inner" id="shareInner">
         <div class="share-left">
-          <div class="share-score" id="shareScore">—</div>
+          <div class="share-score" id="shareScore">-</div>
           <div class="share-meta">
             <div class="t1" id="shareTitle">Context Health Check</div>
             <div class="t2" id="shareSub">Score your own conversation →</div>
@@ -368,7 +388,7 @@
   </section>
 
   <footer class="page-footer">
-    <span>Context Health Check — a diagnostic, not an official Anthropic or OpenAI product. Token counts are estimates (~4 chars/token).</span>
+    <span>Context Health Check - a diagnostic, not an official Anthropic or OpenAI product. Token counts are estimates (~4 chars/token).</span>
     <span>Runs entirely in your browser. Nothing you paste is uploaded.</span>
   </footer>
 </div>

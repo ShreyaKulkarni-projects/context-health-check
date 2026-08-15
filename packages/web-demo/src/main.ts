@@ -1,21 +1,38 @@
 import { analyze, KPI_GLOSSARY, type AnalysisResult, type Recommendation } from "@context-health/core";
 import { parseTranscript, type ParsedTurn } from "./parseTranscript.js";
 
-// ---------- KPI glossary (hover explanation; the note line below each value
-// stays the live computed number, set in runAnalysis()) ----------
-const KPI_INFO_IDS: Record<(typeof KPI_GLOSSARY)[number]["key"], { info: string; tile: string }> = {
-  peakUsage: { info: "kpiUsageInfo", tile: "kpiUsageTile" },
-  bloat: { info: "kpiBloatInfo", tile: "kpiBloatTile" },
-  redundant: { info: "kpiRedundantInfo", tile: "kpiRedundantTile" },
-  turns: { info: "kpiTurnsInfo", tile: "kpiTurnsTile" },
+// ---------- KPI glossary: click a "?" to expand what/why/fix inline (a click
+// toggle is more reliable and discoverable than relying on hover). The note
+// line below each value stays the live computed number, set in
+// runAnalysis(). ----------
+const KPI_INFO_IDS: Record<(typeof KPI_GLOSSARY)[number]["key"], string> = {
+  peakUsage: "kpiUsageInfo",
+  bloat: "kpiBloatInfo",
+  redundant: "kpiRedundantInfo",
+  turns: "kpiTurnsInfo",
 };
+const kpiDetailCard = document.getElementById("kpiDetailCard") as HTMLElement;
+const kpiDetailLabel = document.getElementById("kpiDetailLabel") as HTMLElement;
+const kpiDetailText = document.getElementById("kpiDetailText") as HTMLElement;
+let openKpiKey: string | null = null;
+
 KPI_GLOSSARY.forEach((entry) => {
-  const ids = KPI_INFO_IDS[entry.key];
-  const title = `${entry.oneLiner}. ${entry.detail}`;
-  const info = document.getElementById(ids.info);
-  const tile = document.getElementById(ids.tile);
-  if (info) info.title = title;
-  if (tile) tile.title = title;
+  const btn = document.getElementById(KPI_INFO_IDS[entry.key]);
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const allInfoButtons = Object.values(KPI_INFO_IDS).map((id) => document.getElementById(id));
+    if (openKpiKey === entry.key) {
+      kpiDetailCard.classList.remove("show");
+      openKpiKey = null;
+      allInfoButtons.forEach((b) => b?.classList.remove("active"));
+      return;
+    }
+    openKpiKey = entry.key;
+    kpiDetailLabel.textContent = entry.label;
+    kpiDetailText.textContent = `${entry.oneLiner}. ${entry.detail}`;
+    kpiDetailCard.classList.add("show");
+    allInfoButtons.forEach((b) => b?.classList.toggle("active", b === btn));
+  });
 });
 
 // ---------- Theme ----------
@@ -49,11 +66,11 @@ function currentWindowSize(): number {
 
 // ---------- Demo transcript ----------
 const DEMO: [string, string][] = [
-  ["Human", "Hey — can you help me clean up our onboarding docs repo? I'll paste the main file."],
+  ["Human", "Hey - can you help me clean up our onboarding docs repo? I'll paste the main file."],
   ["Assistant", "Sure, paste it over and I'll take a look at structure, dead links, and anything out of date."],
   [
     "Human",
-    "[PASTED FILE: onboarding.md — 1400 lines]\n" +
+    "[PASTED FILE: onboarding.md - 1400 lines]\n" +
       "## Setup\nStep 1: clone the repo.\nStep 2: install deps with npm install.\nStep 3: copy .env.example to .env.\n".repeat(40),
   ],
   [
@@ -63,41 +80,41 @@ const DEMO: [string, string][] = [
   ["Human", "Rewrite the whole thing, and here's our style guide too."],
   [
     "Human",
-    "[PASTED FILE: style-guide.md — 900 lines]\n" +
+    "[PASTED FILE: style-guide.md - 900 lines]\n" +
       "Voice: friendly, second person. Headings: sentence case. Code blocks: always fenced with language tag.\n".repeat(35),
   ],
   [
     "Assistant",
-    "Thanks — I'll follow the style guide. Here's a first pass at the rewritten onboarding doc, restructured into Prereqs / Setup / First Run / Troubleshooting.",
+    "Thanks - I'll follow the style guide. Here's a first pass at the rewritten onboarding doc, restructured into Prereqs / Setup / First Run / Troubleshooting.",
   ],
   ["Human", "This is good but I realize I sent you the wrong onboarding file earlier, here's the real one, sorry."],
   [
     "Human",
-    "[PASTED FILE: onboarding.md — 1400 lines]\n" +
+    "[PASTED FILE: onboarding.md - 1400 lines]\n" +
       "## Setup\nStep 1: clone the repo.\nStep 2: install deps with npm install.\nStep 3: copy .env.example to .env.\n".repeat(40),
   ],
   [
     "Assistant",
-    "No problem — this actually looks identical to the version you pasted earlier, so my rewrite above should already cover it. Let me know if anything differs and I'll adjust.",
+    "No problem - this actually looks identical to the version you pasted earlier, so my rewrite above should already cover it. Let me know if anything differs and I'll adjust.",
   ],
   ["Human", "Can you also add a section on our release process?"],
-  ["Assistant", "Sure — do you have a doc for that, or should I draft one from what you've told me about your CI setup so far?"],
+  ["Assistant", "Sure - do you have a doc for that, or should I draft one from what you've told me about your CI setup so far?"],
   ["Human", "Draft one, keep it short."],
   [
     "Assistant",
     "Here's a short Release Process section: tag main, CI builds and runs the test suite, a maintainer approves the release PR, then it auto-deploys to staging before a manual promote to prod.",
   ],
-  ["Human", "One more thing — paste in our whole API reference so you can cross-link it from the doc."],
+  ["Human", "One more thing - paste in our whole API reference so you can cross-link it from the doc."],
   [
     "Human",
-    "[PASTED FILE: api-reference.md — 3000 lines]\n" +
+    "[PASTED FILE: api-reference.md - 3000 lines]\n" +
       "### GET /v1/users\nReturns a paginated list of users.\nParameters: limit, cursor.\nResponse: 200 OK with a users array.\n".repeat(90),
   ],
   [
     "Assistant",
     "Cross-linked the relevant endpoints from the API reference into the Troubleshooting and First Run sections. Given how large the reference file is, want me to just link out to it going forward instead of re-reading the whole thing each time?",
   ],
-  ["Human", "Yeah good call. Last thing — can you summarize everything we've decided so far into a changelog entry?"],
+  ["Human", "Yeah good call. Last thing - can you summarize everything we've decided so far into a changelog entry?"],
   [
     "Assistant",
     "Here's the changelog entry: rewrote onboarding.md for clarity and to remove duplicated env instructions, fixed the broken Confluence link, updated the pinned Node version, added a new Release Process section, and linked out to the API reference instead of duplicating it.",
@@ -226,7 +243,7 @@ function showTooltip(
   tooltip.innerHTML = "";
   const valEl = document.createElement("div");
   valEl.className = "t-val";
-  valEl.textContent = "Turn " + (i + 1) + " — " + turn.label;
+  valEl.textContent = "Turn " + (i + 1) + " - " + turn.label;
   const subEl = document.createElement("div");
   subEl.className = "t-sub";
   subEl.textContent =
@@ -248,6 +265,17 @@ const ICONS: Record<Recommendation["icon"], string> = {
   check: "✓",
 };
 
+function labeledSection(label: string, contentEl: HTMLElement): HTMLElement {
+  const section = document.createElement("div");
+  section.className = "rec-section";
+  const labelEl = document.createElement("div");
+  labelEl.className = "rec-label";
+  labelEl.textContent = label;
+  section.appendChild(labelEl);
+  section.appendChild(contentEl);
+  return section;
+}
+
 function renderRecommendations(recommendations: Recommendation[]) {
   const list = document.getElementById("recList")!;
   list.innerHTML = "";
@@ -260,14 +288,37 @@ function renderRecommendations(recommendations: Recommendation[]) {
     icon.textContent = ICONS[r.icon];
     const body = document.createElement("div");
     body.className = "rec-body";
+
     const title = document.createElement("div");
     title.className = "rec-title";
     title.textContent = r.title;
+
     const desc = document.createElement("div");
     desc.className = "rec-desc";
-    desc.textContent = r.description; // app-authored, not user input, but textContent stays the safe default
+    desc.textContent = r.description;
+
+    const why = document.createElement("p");
+    why.className = "rec-why";
+    why.textContent = r.why;
+
+    const steps = document.createElement("ol");
+    steps.className = "rec-steps";
+    r.how.forEach((step) => {
+      const li = document.createElement("li");
+      li.textContent = step;
+      steps.appendChild(li);
+    });
+
+    const impact = document.createElement("p");
+    impact.className = "rec-impact";
+    impact.textContent = r.impact;
+
     body.appendChild(title);
     body.appendChild(desc);
+    body.appendChild(labeledSection("Why this is happening", why));
+    body.appendChild(labeledSection("How to fix it", steps));
+    body.appendChild(labeledSection("After", impact));
+
     item.appendChild(icon);
     item.appendChild(body);
     list.appendChild(item);
@@ -279,13 +330,13 @@ function describeScore(result: AnalysisResult): string {
   const pct = Math.round(result.peakUsagePct);
   switch (result.score.grade.key) {
     case "good":
-      return `This conversation is well within budget — ${pct}% of the context window used, low bloat, no redundant pastes.`;
+      return `This conversation is well within budget - ${pct}% of the context window used, low bloat, no redundant pastes.`;
     case "warning":
-      return `Getting there — ${pct}% of the window used. Worth tidying up before it compounds.`;
+      return `Getting there - ${pct}% of the window used. Worth tidying up before it compounds.`;
     case "serious":
-      return `Context is working against you here — ${Math.round(result.bloatRatio * 100)}% bloat and ${pct}% window usage. Recall is likely already degrading.`;
+      return `Context is working against you here - ${Math.round(result.bloatRatio * 100)}% bloat and ${pct}% window usage. Recall is likely already degrading.`;
     default:
-      return `This conversation is deep into rot risk — ${pct}% of the window used. Start a fresh session before continuing.`;
+      return `This conversation is deep into rot risk - ${pct}% of the window used. Start a fresh session before continuing.`;
   }
 }
 
@@ -326,7 +377,7 @@ function runAnalysis() {
 
   document.getElementById("shareScore")!.textContent = String(result.score.score);
   (document.getElementById("shareScore") as HTMLElement).style.color = result.score.grade.colorVar;
-  document.getElementById("shareTitle")!.textContent = `${result.score.grade.label} — ${result.score.score}/100`;
+  document.getElementById("shareTitle")!.textContent = `${result.score.grade.label} - ${result.score.score}/100`;
   document.getElementById("shareSub")!.textContent = `${Math.round(result.bloatRatio * 100)}% bloat · ${Math.round(result.peakUsagePct)}% of context window used`;
 
   document.getElementById("results")!.classList.add("show");
@@ -341,7 +392,7 @@ document.getElementById("copySummary")!.addEventListener("click", () => {
   const grade = document.getElementById("scoreLabelText")!.textContent;
   const bloat = document.getElementById("kpiBloat")!.textContent;
   const usage = document.getElementById("kpiUsage")!.textContent;
-  const text = `My AI conversation scored ${score}/100 (${grade}) on Context Health Check — ${bloat} bloat, ${usage} of the context window used. Check yours with Context Health Check.`;
+  const text = `My AI conversation scored ${score}/100 (${grade}) on Context Health Check - ${bloat} bloat, ${usage} of the context window used. Check yours with Context Health Check.`;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text);
   }

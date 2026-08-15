@@ -55,7 +55,14 @@ export interface Recommendation {
   icon: RecommendationIcon;
   colorVar: string;
   title: string;
+  /** Short summary - what fired and the headline number, one or two sentences. */
   description: string;
+  /** Why this is happening in THIS conversation, specifically. */
+  why: string;
+  /** Concrete, ordered steps to fix it. */
+  how: string[];
+  /** What changes once you've done it. */
+  impact: string;
 }
 
 export interface AnalysisResult {
