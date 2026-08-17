@@ -34,6 +34,7 @@ npm run dev -w @context-health/mcp-server    # mcp-server, watch mode
 ## Before opening a PR
 
 - If you touched `packages/core`: add or update tests. `npm test` covers token estimation, bloat detection, redundancy true/false positives, score/grade boundaries, and recommendation ordering - a change that doesn't move any of those numbers usually means the test is missing, not that nothing changed.
+- If you changed anything that affects the score/grade/recommendations a *realistic conversation* would get (not just an internal constant): add or update a case in `npm run eval -w @context-health/core` too. See [`packages/core/evals/README.md`](packages/core/evals/README.md) - it's a different layer than the unit tests, checking outcomes on realistic conversation shapes rather than internal values.
 - If you touched visual output shared across packages (colors, meter/KPI/chart styling): change it in `packages/core/src/constants/theme.css` (and `theme.ts` if it's a raw hex value used outside CSS), not in an individual package. `web-demo` and `extension` both import from there specifically so there's one palette, not three.
 - Run `npm run typecheck` and `npm run build` before pushing - a package that fails to build silently breaks whichever front door imports it.
 - Commit in reviewable chunks scoped to one package or concern at a time, the way the existing history does - not one giant diff across all four packages.
