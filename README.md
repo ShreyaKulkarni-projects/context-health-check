@@ -2,6 +2,8 @@
 
 Diagnoses "context rot" in AI chat sessions in real time - a live health score, not just a token counter.
 
+**[Try it live](https://shreyakulkarni-projects.github.io/context-health-check/)** - paste a conversation, get a score, no install. Nothing you paste leaves your browser.
+
 ![Context Health Check scoring a conversation: 64/100, At risk, with KPI tiles, a turn-by-turn usage chart, and structured recommendations](docs/web-demo-screenshot.png)
 
 ## The problem
@@ -68,6 +70,8 @@ Add to your Claude Desktop or Claude Code MCP config:
 Full details, including the `npx`-ready config for once this is published, are in [`packages/mcp-server/README.md`](packages/mcp-server/README.md).
 
 ### Web demo (zero install)
+
+**[Use it live](https://shreyakulkarni-projects.github.io/context-health-check/)**, or build and run it yourself:
 
 ```bash
 npm run build -w @context-health/web-demo
