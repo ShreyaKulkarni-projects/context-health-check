@@ -27,6 +27,9 @@ jobs:
       - name: Test core
         run: npm test -w @context-health/core
 
+      - name: Run core evals
+        run: npm run eval -w @context-health/core
+
       - name: Typecheck all packages
         run: npm run typecheck --workspaces --if-present
 
